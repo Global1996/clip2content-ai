@@ -23,9 +23,8 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [resolved, setResolved] = useState<"light" | "dark">(() =>
-    readResolvedFromDom()
-  );
+  /** Must match SSR + first client paint — never read `document` in useState initializer (hydration mismatch). */
+  const [resolved, setResolved] = useState<"light" | "dark">("dark");
 
   useLayoutEffect(() => {
     setResolved(readResolvedFromDom());
