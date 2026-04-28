@@ -17,6 +17,15 @@ function mergeSupabaseCookies(from: NextResponse, to: NextResponse) {
 }
 
 export async function updateSession(request: NextRequest) {
+  try {
+    return await runSession(request);
+  } catch (err) {
+    console.error("[proxy/middleware session]", err);
+    return NextResponse.next({ request });
+  }
+}
+
+async function runSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
   });
@@ -94,3 +103,4 @@ export async function updateSession(request: NextRequest) {
 
   return response;
 }
+
