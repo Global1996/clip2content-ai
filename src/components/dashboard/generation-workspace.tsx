@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { ContentOutput } from "@/types/content";
 import type { EmphasisOption } from "@/lib/dashboard/generation-meta";
@@ -19,6 +19,7 @@ import { serializeGenerationPlainText } from "@/lib/content/serialize-generation
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { DownloadPackButton } from "@/components/dashboard/download-pack-button";
 import { GenerationOutputView } from "@/components/dashboard/generation-output-view";
+import { SaveFavoriteButton } from "@/components/dashboard/save-favorite-button";
 import { useDashboardData } from "@/components/dashboard/dashboard-context";
 import {
   FreeQuotaConversionBanner,
@@ -33,11 +34,17 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
   heading,
   showHeading = true,
   submitLabel = "Generate Content",
+  initialTopicSeed,
+  initialPlatformSeed,
 }: {
   emphasis?: EmphasisOption;
   heading?: string;
   showHeading?: boolean;
   submitLabel?: string;
+  /** Deep-link from templates / favorites quick links */
+  initialTopicSeed?: string;
+  /** Optional platform preset from templates (matches PLATFORM_OPTIONS id). */
+  initialPlatformSeed?: string;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const motionDur = prefersReducedMotion ? 0 : 0.2;
@@ -63,6 +70,18 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
     topic: string;
     output: ContentOutput;
   } | null>(null);
+
+  useEffect(() => {
+    const seed = initialTopicSeed?.trim();
+    if (seed) setTopic(seed);
+  }, [initialTopicSeed]);
+
+  useEffect(() => {
+    const p = initialPlatformSeed?.trim().toLowerCase();
+    if (!p) return;
+    const ok = PLATFORM_OPTIONS.some((x) => x.id === p);
+    if (ok) setPlatform(p);
+  }, [initialPlatformSeed]);
 
   function applyExample() {
     setTopic(EXAMPLE_TOPIC);
@@ -418,6 +437,14 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
                     result.output
                   )}
                   className="border-violet-500/35 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25"
+                />
+                <SaveFavoriteButton
+                  title={result.topic}
+                  topicSnapshot={result.topic}
+                  output={result.output}
+                  platform={platform}
+                  sourceGenerationId={result.id}
+                  variant="dash"
                 />
                 <DownloadPackButton
                   topic={result.topic}

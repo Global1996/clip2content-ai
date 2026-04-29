@@ -98,11 +98,23 @@ export async function buildDashboardStats(
     monthGrowthPercent = 100;
   }
 
+  const favRes = await supabase
+    .from("favorites")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (favRes.error && process.env.NODE_ENV === "development") {
+    console.warn("[buildDashboardStats] favorites count:", favRes.error.message);
+  }
+
+  const favoritesCount =
+    !favRes.error && typeof favRes.count === "number" ? favRes.count : 0;
+
   return {
     totalGenerations,
     thisMonthCount,
     monthGrowthPercent,
-    favoritesCount: 0,
+    favoritesCount,
   };
 }
 

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { CheckEmailPanel } from "@/components/auth/check-email-panel";
+import { EmailConfirmationTroubleshoot } from "@/components/auth/email-confirmation-troubleshoot";
 import { InlineSpinner } from "@/components/auth/inline-spinner";
 import { useResendCooldown } from "@/hooks/use-resend-cooldown";
-import { buildAuthCallbackUrl } from "@/lib/auth/email-auth-url";
+import { buildAuthCallbackUrl, resolveAuthRedirectOrigin } from "@/lib/auth/email-auth-url";
 import { getSafeRedirectPath } from "@/lib/auth/safe-redirect";
 import { createClient } from "@/lib/supabase/client";
 import { VirloWordmark } from "@/components/brand/virlo-logo";
@@ -33,8 +34,7 @@ export default function RegisterForm() {
     setLoading(true);
     setErrorMsg(null);
 
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = resolveAuthRedirectOrigin();
 
     const supabase = createClient();
     const emailRedirectTo =
@@ -69,8 +69,7 @@ export default function RegisterForm() {
     setResendLoading(true);
     setErrorMsg(null);
 
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = resolveAuthRedirectOrigin();
 
     const supabase = createClient();
     const emailRedirectTo =
@@ -114,6 +113,7 @@ export default function RegisterForm() {
               canResend={canResend}
               secondsUntilResend={secondsLeft}
             />
+            <EmailConfirmationTroubleshoot />
             {errorMsg ? (
               <p className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
                 {errorMsg}

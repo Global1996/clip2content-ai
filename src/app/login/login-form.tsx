@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CheckEmailPanel } from "@/components/auth/check-email-panel";
 import { InlineSpinner } from "@/components/auth/inline-spinner";
 import { useResendCooldown } from "@/hooks/use-resend-cooldown";
-import { buildAuthCallbackUrl } from "@/lib/auth/email-auth-url";
+import { buildAuthCallbackUrl, resolveAuthRedirectOrigin } from "@/lib/auth/email-auth-url";
 import { getSafeRedirectPath } from "@/lib/auth/safe-redirect";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -64,8 +64,7 @@ export default function LoginForm() {
     else setMagicLoading(true);
     setErrorMsg(null);
 
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = resolveAuthRedirectOrigin();
 
     const supabase = createClient();
     const emailRedirectTo =

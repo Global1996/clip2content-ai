@@ -3,7 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { needsOnboarding } from "@/lib/dashboard/onboarding";
 import { GenerationWorkspace } from "@/components/dashboard/generation-workspace";
 
-export default async function DashboardGeneratePage() {
+export default async function DashboardGeneratePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seed_topic?: string; seed_platform?: string }>;
+}) {
+  const sp = await searchParams;
+  const seed_topic =
+    typeof sp.seed_topic === "string" ? sp.seed_topic : undefined;
+  const seed_platform =
+    typeof sp.seed_platform === "string" ? sp.seed_platform : undefined;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,7 +38,12 @@ export default async function DashboardGeneratePage() {
           Tune tone and platform, then ship hooks, scripts, captions, and posts.
         </p>
       </div>
-      <GenerationWorkspace heading={undefined} showHeading={false} />
+      <GenerationWorkspace
+        heading={undefined}
+        showHeading={false}
+        initialTopicSeed={seed_topic}
+        initialPlatformSeed={seed_platform}
+      />
     </div>
   );
 }

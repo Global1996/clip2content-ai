@@ -6,6 +6,7 @@ import { serializeGenerationPlainText } from "@/lib/content/serialize-generation
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { DownloadPackButton } from "@/components/dashboard/download-pack-button";
 import { GenerationOutputView } from "@/components/dashboard/generation-output-view";
+import { SaveFavoriteButton } from "@/components/dashboard/save-favorite-button";
 
 export type HistoryCardRow = {
   id: string;
@@ -68,6 +69,14 @@ export function GenerationHistoryCard({
               topic={row.topic}
               output={row.output}
               className="w-full sm:w-auto"
+            />
+            <SaveFavoriteButton
+              title={row.topic}
+              topicSnapshot={row.topic}
+              output={row.output}
+              platform="tiktok"
+              sourceGenerationId={row.id}
+              variant="marketing"
             />
             <button
               type="button"

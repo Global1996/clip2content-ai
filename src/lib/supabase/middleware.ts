@@ -66,6 +66,7 @@ async function runSession(request: NextRequest) {
   const isProtected =
     path.startsWith("/dashboard") ||
     path.startsWith("/api/generations") ||
+    path.startsWith("/api/favorites") ||
     path === "/api/generate" ||
     path === "/api/usage" ||
     path === "/api/dashboard/data" ||
