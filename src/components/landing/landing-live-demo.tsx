@@ -66,8 +66,10 @@ function LandingLiveDemoInner() {
     fetchDemoMeta().then(setMeta);
   }, []);
 
+  // Sync topic with the URL `preset` query param (external router state).
   useEffect(() => {
     if (!presetParam || !isDemoPresetId(presetParam)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTopic(DEMO_PRESETS[presetParam].topic);
   }, [presetParam]);
 
@@ -134,7 +136,7 @@ function LandingLiveDemoInner() {
 
   const triesLabel = useMemo(() => {
     if (!meta) return null;
-    const { remaining, max } = meta;
+    const { remaining } = meta;
     if (remaining <= 0) return "No free previews left";
     return `${remaining} free preview${remaining === 1 ? "" : "s"} left`;
   }, [meta]);

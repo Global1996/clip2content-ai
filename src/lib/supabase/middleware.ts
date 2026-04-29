@@ -26,7 +26,7 @@ export async function updateSession(request: NextRequest) {
 }
 
 async function runSession(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request,
   });
 
@@ -104,4 +104,3 @@ async function runSession(request: NextRequest) {
 
   return response;
 }
-

@@ -131,8 +131,10 @@ export const DashboardFavoritesView = memo(function DashboardFavoritesView() {
     setMostUsedHighlights(mu);
   }, [debouncedSearch, sort, typeFilter, platformFilter, selectedTags]);
 
+  // Drives the loading skeleton each time filters change — setState in effect is intentional.
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     load()
       .catch((e) => {

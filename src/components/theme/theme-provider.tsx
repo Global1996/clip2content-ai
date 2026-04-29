@@ -4,8 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useLayoutEffect,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 const STORAGE_KEY = "clip2theme";
@@ -13,6 +12,17 @@ const STORAGE_KEY = "clip2theme";
 function readResolvedFromDom(): "light" | "dark" {
   if (typeof document === "undefined") return "dark";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
+/** Subscribe to <html class> changes — keeps theme state in sync without setState-in-effect. */
+function subscribeToHtmlClass(onStoreChange: () => void): () => void {
+  if (typeof document === "undefined") return () => undefined;
+  const obs = new MutationObserver(onStoreChange);
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => obs.disconnect();
 }
 
 type ThemeContextValue = {
@@ -23,20 +33,12 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  /** Must match SSR + first client paint — never read `document` in useState initializer (hydration mismatch). */
-  const [resolved, setResolved] = useState<"light" | "dark">("dark");
-
-  useLayoutEffect(() => {
-    setResolved(readResolvedFromDom());
-    const obs = new MutationObserver(() =>
-      setResolved(readResolvedFromDom())
-    );
-    obs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => obs.disconnect();
-  }, []);
+  /** SSR snapshot is "dark" to match the pre-paint script default + avoid hydration mismatches. */
+  const resolved = useSyncExternalStore(
+    subscribeToHtmlClass,
+    readResolvedFromDom,
+    () => "dark" as const
+  );
 
   const toggle = useCallback(() => {
     const next = document.documentElement.classList.contains("dark")
@@ -48,7 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
     document.documentElement.classList.toggle("dark", next === "dark");
-    setResolved(next);
+    /* MutationObserver from useSyncExternalStore picks up the class change. */
   }, []);
 
   return (

@@ -34,8 +34,10 @@ export function SaveFavoriteButton({
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(linked);
 
+  // Re-resolve the linked favorite whenever the prop id changes (external state).
   useEffect(() => {
     if (!sourceGenerationId?.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFavoriteId(null);
       setResolving(false);
       return;
