@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FREE_DAILY_GENERATION_LIMIT } from "@/lib/billing/constants";
 import { useDashboardData } from "@/components/dashboard/dashboard-context";
 
 /** Short bullets for Pro upsells — keep honest vs roadmap items */
@@ -12,11 +13,18 @@ export const PRO_VALUE_POINTS = [
   "Stripe-backed billing — upgrade or cancel anytime",
 ] as const;
 
+/** Conversion paywall — paired with GenerationPaywallPanel */
+export const PAYWALL_VALUE_POINTS = [
+  "Unlimited generations",
+  "Faster content creation — no daily ceiling",
+  "Access to all tools & workflows",
+] as const;
+
 export type UpgradeTone = "default" | "warning" | "urgent";
 
 export function getFreeQuotaTone(remaining: number): UpgradeTone {
-  if (remaining <= 1) return "urgent";
-  if (remaining === 2) return "warning";
+  if (remaining <= 0) return "urgent";
+  if (remaining === 1) return "warning";
   return "default";
 }
 
@@ -82,7 +90,7 @@ export function FreeQuotaConversionBanner({
   const { usage } = useDashboardData();
   if (usage.unlimited || usage.remainingToday == null) return null;
 
-  const limit = usage.dailyLimit ?? 3;
+  const limit = usage.dailyLimit ?? FREE_DAILY_GENERATION_LIMIT;
   const remaining = usage.remainingToday;
   const tone = getFreeQuotaTone(remaining);
 
@@ -105,25 +113,27 @@ export function FreeQuotaConversionBanner({
     >
       <div className="min-w-0 space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-          Free plan · Daily limit ({limit}/day UTC)
+          <span className="text-rose-400/95">Limited free usage</span>
+          <span className="text-zinc-600"> · </span>
+          {limit}/day UTC on Free
         </p>
         <p className="text-sm leading-snug">
           {remaining === 0 ? (
             <>
               <span className="font-semibold text-white">
-                You&apos;ve hit today&apos;s cap.
+                You&apos;ve reached your free limit.
               </span>{" "}
               <span className="text-zinc-400">
-                Come back after UTC midnight — or go unlimited with Pro.
+                Upgrade to keep generating — or wait until UTC midnight.
               </span>
             </>
           ) : remaining === 1 ? (
             <>
               <span className="font-semibold text-amber-100">
-                Only 1 generation left today.
+                Last free generation today.
               </span>{" "}
               <span className="text-zinc-400">
-                Don&apos;t lose your streak — upgrade for unlimited packs.
+                Next attempt locks until tomorrow UTC — Pro is unlimited.
               </span>
             </>
           ) : tone === "warning" ? (
@@ -141,13 +151,15 @@ export function FreeQuotaConversionBanner({
                 <span className="font-semibold text-white">{remaining}</span> of{" "}
                 {limit} free generations left today.
               </span>{" "}
-              <span className="text-zinc-500">Resets UTC midnight.</span>
+              <span className="text-zinc-500">
+                Limited free usage · resets UTC midnight.
+              </span>
             </>
           )}
         </p>
       </div>
       <UpgradeToProLink size="sm" className="shrink-0 shadow-lg">
-        Upgrade to Pro
+        Upgrade to Pro – $9/month
       </UpgradeToProLink>
     </div>
   );
@@ -158,7 +170,7 @@ export function FreeQuotaMeterLine() {
   const { usage } = useDashboardData();
   if (usage.unlimited || usage.remainingToday == null) return null;
 
-  const limit = usage.dailyLimit ?? 3;
+  const limit = usage.dailyLimit ?? FREE_DAILY_GENERATION_LIMIT;
   const remaining = usage.remainingToday;
   const used = limit - remaining;
 
@@ -171,5 +183,73 @@ export function FreeQuotaMeterLine() {
       generations used today (UTC).{" "}
       <UpgradeToProTextLink>Unlimited with Pro →</UpgradeToProTextLink>
     </p>
+  );
+}
+
+/** High-intent paywall — blurred “output” preview + upgrade story */
+export function GenerationPaywallPanel({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-rose-500/30 bg-[#0a0d14]/95 shadow-[0_32px_90px_-48px_rgba(244,63,94,0.35)]",
+        className
+      )}
+      role="region"
+      aria-labelledby="paywall-heading"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(244,63,94,0.12),transparent_55%)]" />
+
+      <div className="relative min-h-[240px] sm:min-h-[260px]">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 space-y-3 px-8 pb-8 pt-10 blur-[10px] brightness-[0.55]"
+          aria-hidden
+        >
+          <div className="mx-auto h-3 max-w-[85%] rounded-full bg-zinc-500/90" />
+          <div className="mx-auto h-3 max-w-full rounded-full bg-zinc-600/80" />
+          <div className="mx-auto h-3 max-w-[72%] rounded-full bg-zinc-500/75" />
+          <div className="mx-auto mt-6 h-24 max-w-full rounded-2xl bg-zinc-700/50" />
+          <div className="mx-auto h-3 max-w-[90%] rounded-full bg-zinc-600/70" />
+          <div className="mx-auto h-3 max-w-[68%] rounded-full bg-zinc-500/65" />
+        </div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#07090f]/78 px-5 backdrop-blur-[3px] sm:px-10">
+          <span className="mb-4 inline-flex items-center rounded-full border border-rose-500/35 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-200">
+            Limited free usage
+          </span>
+          <h3
+            id="paywall-heading"
+            className="max-w-md text-center text-xl font-semibold tracking-tight text-white sm:text-2xl"
+          >
+            You&apos;ve reached your free limit
+          </h3>
+          <ul className="mt-5 max-w-sm space-y-2.5 text-left text-[15px] leading-snug text-zinc-300">
+            {PAYWALL_VALUE_POINTS.map((line) => (
+              <li key={line} className="flex gap-3">
+                <span
+                  className="mt-0.5 shrink-0 text-emerald-400"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/pricing"
+            className="dash-btn-shine mt-8 inline-flex min-h-[48px] min-w-[220px] items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-violet-500 to-blue-600 px-8 text-[15px] font-semibold text-white shadow-[0_16px_48px_-16px_rgba(124,58,237,0.55)] ring-1 ring-white/10 transition hover:brightness-[1.08] active:scale-[0.98]"
+          >
+            Upgrade to Pro – $9/month
+          </Link>
+          <p className="mt-4 max-w-xs text-center text-xs leading-relaxed text-zinc-500">
+            Resets at UTC midnight on Free — Pro stays unlimited.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

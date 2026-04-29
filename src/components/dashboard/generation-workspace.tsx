@@ -20,7 +20,10 @@ import { CopyButton } from "@/components/dashboard/copy-button";
 import { DownloadPackButton } from "@/components/dashboard/download-pack-button";
 import { GenerationOutputView } from "@/components/dashboard/generation-output-view";
 import { useDashboardData } from "@/components/dashboard/dashboard-context";
-import { FreeQuotaConversionBanner } from "@/components/dashboard/upgrade-conversion";
+import {
+  FreeQuotaConversionBanner,
+  GenerationPaywallPanel,
+} from "@/components/dashboard/upgrade-conversion";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 
 const EXAMPLE_TOPIC = `Why your first week on a new habit feels chaotic — one mindset shift that keeps you consistent (without burnout).`;
@@ -38,7 +41,11 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
 }) {
   const prefersReducedMotion = useReducedMotion();
   const motionDur = prefersReducedMotion ? 0 : 0.2;
-  const { refresh } = useDashboardData();
+  const { refresh, usage } = useDashboardData();
+  const freeLimitReached =
+    !usage.unlimited &&
+    usage.remainingToday !== null &&
+    usage.remainingToday <= 0;
 
   const [topic, setTopic] = useState("");
   const debouncedTopic = useDebouncedValue(topic, 350);
@@ -68,7 +75,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
   async function onGenerate(e: React.FormEvent) {
     e.preventDefault();
     const raw = topic.trim();
-    if (!raw) return;
+    if (!raw || freeLimitReached) return;
     setLoading(true);
     setGenerateError(null);
     try {
@@ -89,6 +96,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
       });
       let data: {
         error?: string;
+        code?: string;
         output?: ContentOutput;
         topic?: string;
         id?: string;
@@ -99,6 +107,10 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
         throw new Error("The server returned an invalid response.");
       }
       if (!res.ok) {
+        if (res.status === 403 && data.code === "DAILY_LIMIT") {
+          await refresh({ silent: true });
+          return;
+        }
         const msg =
           typeof data.error === "string" ? data.error : "Generation failed.";
         if (res.status === 401) {
@@ -136,13 +148,14 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
         >
           <p>{generateError}</p>
           {(generateError.toLowerCase().includes("limit") ||
+            generateError.includes("free limit") ||
             generateError.includes("Free plan")) && (
             <p className="mt-2">
               <Link
                 href="/pricing"
                 className="font-semibold text-violet-400 underline-offset-4 hover:underline"
               >
-                Upgrade to Pro — unlimited generations
+                Upgrade to Pro — $9/month
               </Link>
             </p>
           )}
@@ -159,7 +172,10 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
             ease: [0.22, 1, 0.36, 1],
           },
         }}
-        className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl transition-[border-color,box-shadow] duration-300 ease-out hover:border-white/[0.11] hover:shadow-[0_28px_56px_-36px_rgba(0,0,0,0.65)] sm:p-8"
+        className={cn(
+          "overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827]/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl transition-[border-color,box-shadow] duration-300 ease-out hover:border-white/[0.11] hover:shadow-[0_28px_56px_-36px_rgba(0,0,0,0.65)] sm:p-8",
+          freeLimitReached && "opacity-60 saturate-[0.85]"
+        )}
       >
         <form onSubmit={onGenerate} className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -172,7 +188,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
             <button
               type="button"
               onClick={applyExample}
-              disabled={loading}
+              disabled={loading || freeLimitReached}
               className="shrink-0 rounded-xl border border-violet-500/35 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/20 disabled:opacity-50"
             >
               Try example
@@ -183,7 +199,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
               id="gen-topic"
               rows={6}
               value={topic}
-              disabled={loading}
+              disabled={loading || freeLimitReached}
               onChange={(e) => setTopic(e.target.value)}
               placeholder='e.g. "5 mistakes everyone makes before their first marathon — and how to skip them"'
               className="min-h-[168px] w-full resize-y rounded-2xl border border-white/[0.08] bg-[#0B0F19]/80 px-4 pb-11 pt-4 text-[15px] leading-relaxed text-zinc-100 placeholder:text-zinc-600 outline-none ring-offset-0 ring-offset-[#111827]/80 transition-[border-color,box-shadow] duration-200 ease-out focus:border-violet-500/45 focus:shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35),0_0_0_3px_rgba(139,92,246,0.12)] focus:ring-0 disabled:opacity-50"
@@ -206,7 +222,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                disabled={loading}
+                disabled={loading || freeLimitReached}
                 className="mt-2 w-full cursor-pointer rounded-xl border border-white/[0.08] bg-[#0B0F19]/80 px-4 py-3 text-sm text-zinc-100 outline-none transition-[border-color,background-color] duration-200 ease-out hover:border-white/[0.13] focus:border-violet-500/45 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
               >
                 {TONE_OPTIONS.map((t) => (
@@ -223,7 +239,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
               <select
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                disabled={loading}
+                disabled={loading || freeLimitReached}
                 className="mt-2 w-full cursor-pointer rounded-xl border border-white/[0.08] bg-[#0B0F19]/80 px-4 py-3 text-sm text-zinc-100 outline-none transition-[border-color,background-color] duration-200 ease-out hover:border-white/[0.13] focus:border-violet-500/45 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
               >
                 {PLATFORM_OPTIONS.map((p) => (
@@ -240,7 +256,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                disabled={loading}
+                disabled={loading || freeLimitReached}
                 className="mt-2 w-full cursor-pointer rounded-xl border border-white/[0.08] bg-[#0B0F19]/80 px-4 py-3 text-sm text-zinc-100 outline-none transition-[border-color,background-color] duration-200 ease-out hover:border-white/[0.13] focus:border-violet-500/45 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
               >
                 {LANGUAGE_OPTIONS.map((p) => (
@@ -259,7 +275,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
                 onChange={(e) =>
                   setLength(e.target.value as "short" | "medium" | "long")
                 }
-                disabled={loading}
+                disabled={loading || freeLimitReached}
                 className="mt-2 w-full cursor-pointer rounded-xl border border-white/[0.08] bg-[#0B0F19]/80 px-4 py-3 text-sm text-zinc-100 outline-none transition-[border-color,background-color] duration-200 ease-out hover:border-white/[0.13] focus:border-violet-500/45 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
               >
                 {LENGTH_OPTIONS.map((p) => (
@@ -336,7 +352,7 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
 
           <motion.button
             type="submit"
-            disabled={loading || !topic.trim()}
+            disabled={loading || !topic.trim() || freeLimitReached}
             whileHover={
               prefersReducedMotion || loading
                 ? undefined
@@ -368,6 +384,8 @@ export const GenerationWorkspace = memo(function GenerationWorkspace({
           </motion.button>
         </form>
       </motion.div>
+
+      {freeLimitReached ? <GenerationPaywallPanel className="mt-7" /> : null}
 
       <AnimatePresence mode="wait">
         {result && (

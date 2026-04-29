@@ -22,7 +22,7 @@ const plans: {
     price: "$0",
     period: "",
     desc: "Try Virlo on the free tier with daily limits.",
-    features: ["3 generations per day (UTC)", "Full structured output", "Saved history"],
+    features: ["2 free generations per day (UTC)", "Full structured output", "Saved history"],
   },
   {
     key: "pro",

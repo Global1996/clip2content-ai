@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { CheckEmailPanel } from "@/components/auth/check-email-panel";
+import { InlineSpinner } from "@/components/auth/inline-spinner";
+import { useResendCooldown } from "@/hooks/use-resend-cooldown";
+import { buildAuthCallbackUrl } from "@/lib/auth/email-auth-url";
 import { getSafeRedirectPath } from "@/lib/auth/safe-redirect";
+import { createClient } from "@/lib/supabase/client";
 import { VirloWordmark } from "@/components/brand/virlo-logo";
 
 export default function RegisterForm() {
@@ -15,7 +19,11 @@ export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
+
+  const [resendLoading, setResendLoading] = useState(false);
+  const { secondsLeft, startCooldown, canResend } = useResendCooldown(30);
 
   const queryString = searchParams.toString();
   const loginHref = queryString ? `/login?${queryString}` : "/login";
@@ -23,23 +31,26 @@ export default function RegisterForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+    setErrorMsg(null);
 
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
 
     const supabase = createClient();
+    const emailRedirectTo =
+      origin && redirect ? buildAuthCallbackUrl(origin, redirect) : undefined;
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: {
-        emailRedirectTo: origin ? `${origin}/auth/callback?next=${encodeURIComponent(redirect)}` : undefined,
-      },
+      options: emailRedirectTo
+        ? { emailRedirectTo }
+        : undefined,
     });
 
     setLoading(false);
     if (error) {
-      setMessage(error.message);
+      setErrorMsg(error.message);
       return;
     }
     if (data.session) {
@@ -47,9 +58,36 @@ export default function RegisterForm() {
       router.refresh();
       return;
     }
-    setMessage(
-      "Check your email to confirm your account, then sign in."
-    );
+    setAwaitingVerification(true);
+    startCooldown();
+  }
+
+  async function resendConfirmationEmail() {
+    const trimmed = email.trim();
+    if (!trimmed || !canResend) return;
+
+    setResendLoading(true);
+    setErrorMsg(null);
+
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+
+    const supabase = createClient();
+    const emailRedirectTo =
+      origin && redirect ? buildAuthCallbackUrl(origin, redirect) : undefined;
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: trimmed,
+      options: emailRedirectTo ? { emailRedirectTo } : undefined,
+    });
+
+    setResendLoading(false);
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+    startCooldown();
   }
 
   const inputClass =
@@ -65,61 +103,112 @@ export default function RegisterForm() {
         <p className="mt-3 text-center text-[15px] leading-relaxed text-muted">
           Start generating in under a minute.
         </p>
-        <form onSubmit={onSubmit} className="mt-10 flex flex-col gap-5">
-          <div>
-            <label htmlFor="reg-email" className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Email
-            </label>
-            <input
-              id="reg-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
+
+        {awaitingVerification ? (
+          <div className="mt-10 flex flex-col gap-6">
+            <CheckEmailPanel
+              email={email.trim()}
+              hint="We sent a confirmation link to"
+              onResend={resendConfirmationEmail}
+              resendLoading={resendLoading}
+              canResend={canResend}
+              secondsUntilResend={secondsLeft}
             />
-          </div>
-          <div>
-            <label htmlFor="reg-password" className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Password
-            </label>
-            <input
-              id="reg-password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          {message && (
-            <p
-              className={
-                message.startsWith("Check your")
-                  ? "rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-foreground/90"
-                  : "rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-              }
+            {errorMsg ? (
+              <p className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
+                {errorMsg}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setAwaitingVerification(false);
+                setErrorMsg(null);
+              }}
+              className="text-center text-[15px] font-semibold text-primary transition hover:text-primary/85"
             >
-              {message}
+              Use a different email
+            </button>
+            <p className="text-center text-[15px] text-muted">
+              Already confirmed?{" "}
+              <Link
+                href={loginHref}
+                className="font-semibold text-primary transition hover:text-primary/85"
+              >
+                Sign in
+              </Link>
             </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 flex h-12 items-center justify-center rounded-2xl bg-primary text-[15px] font-semibold text-white shadow-glow transition duration-200 hover:brightness-110 disabled:opacity-55"
-          >
-            {loading ? "Creating…" : "Create account"}
-          </button>
-        </form>
-        <p className="mt-8 text-center text-[15px] text-muted">
-          Already have an account?{" "}
-          <Link href={loginHref} className="font-semibold text-primary transition hover:text-primary/85">
-            Sign in
-          </Link>
-        </p>
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="mt-10 flex flex-col gap-5">
+            <div>
+              <label
+                htmlFor="reg-email"
+                className="text-xs font-semibold uppercase tracking-wider text-muted"
+              >
+                Email
+              </label>
+              <input
+                id="reg-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="reg-password"
+                className="text-xs font-semibold uppercase tracking-wider text-muted"
+              >
+                Password
+              </label>
+              <input
+                id="reg-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            {errorMsg ? (
+              <p className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {errorMsg}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={loading}
+              className="touch-manipulation mt-2 flex h-12 items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-semibold text-white shadow-glow transition duration-200 hover:brightness-110 disabled:pointer-events-none disabled:opacity-55"
+            >
+              {loading ? (
+                <>
+                  <InlineSpinner />
+                  Sending…
+                </>
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </form>
+        )}
+
+        {!awaitingVerification ? (
+          <p className="mt-8 text-center text-[15px] text-muted">
+            Already have an account?{" "}
+            <Link
+              href={loginHref}
+              className="font-semibold text-primary transition hover:text-primary/85"
+            >
+              Sign in
+            </Link>
+          </p>
+        ) : null}
       </div>
     </div>
   );

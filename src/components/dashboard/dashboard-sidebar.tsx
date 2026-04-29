@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { FREE_DAILY_GENERATION_LIMIT } from "@/lib/billing/constants";
 import { useDashboardData } from "@/components/dashboard/dashboard-context";
 import { VirloWordmark } from "@/components/brand/virlo-logo";
 import {
@@ -83,7 +84,7 @@ export function DashboardSidebar({
     usage.dailyLimit != null && usage.remainingToday != null
       ? usage.dailyLimit - usage.remainingToday
       : 0;
-  const cap = usage.dailyLimit ?? 3;
+  const cap = usage.dailyLimit ?? FREE_DAILY_GENERATION_LIMIT;
   const pct =
     usage.unlimited || usage.dailyLimit == null
       ? 100
@@ -178,7 +179,7 @@ export function DashboardSidebar({
                 />
               </div>
               <p className="mt-2 text-xs text-zinc-400">
-                {usage.remainingToday} of {usage.dailyLimit ?? 3} generations left
+                {usage.remainingToday} of {usage.dailyLimit ?? FREE_DAILY_GENERATION_LIMIT} generations left
                 today <span className="text-zinc-600">(UTC)</span>
               </p>
             </>

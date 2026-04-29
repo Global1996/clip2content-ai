@@ -18,7 +18,7 @@ export default function PricingPage() {
             Simple pricing
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-muted sm:text-xl">
-            Free tier includes 3 generations per UTC day. Upgrade for unlimited AI packs.
+            Free tier includes 2 generations per UTC day. Upgrade for unlimited AI packs.
           </p>
         </div>
       </section>

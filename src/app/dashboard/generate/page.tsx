@@ -1,6 +1,23 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { needsOnboarding } from "@/lib/dashboard/onboarding";
 import { GenerationWorkspace } from "@/components/dashboard/generation-workspace";
 
-export default function DashboardGeneratePage() {
+export default async function DashboardGeneratePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?redirect=/dashboard/generate");
+  }
+
+  const meta = user.user_metadata as Record<string, unknown> | undefined;
+  if (await needsOnboarding(supabase, user.id, meta)) {
+    redirect("/dashboard/onboarding");
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-10 pb-20 lg:space-y-12 lg:pb-24">
       <div className="space-y-2">

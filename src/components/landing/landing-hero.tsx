@@ -37,18 +37,18 @@ export function LandingHero() {
           animate="show"
           className="text-[clamp(2rem,6vw,3.75rem)] font-semibold leading-[1.08] tracking-tight text-foreground"
         >
-          Turn Any Idea Into{" "}
-          <span className="gradient-text">Viral Content</span> in Seconds
+          Go Viral in Minutes —{" "}
+          <span className="gradient-text">Not Hours</span>
         </motion.h1>
         <motion.p
           custom={2}
           variants={fade}
           initial="hidden"
           animate="show"
-          className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-muted sm:text-lg"
+          className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted sm:text-lg"
         >
-          Stop staring at a blank screen. Drop in a topic — get hooks, scripts,
-          captions, and posts you can publish today.
+          One topic becomes hooks, speak-ready scripts, captions, and feed posts — structured so you can record,
+          post, and iterate today instead of fighting the blank page.
         </motion.p>
         <motion.div
           custom={3}
@@ -59,20 +59,22 @@ export function LandingHero() {
         >
           <Link
             href="/register"
-            className="touch-manipulation inline-flex min-h-[52px] w-full max-w-sm items-center justify-center rounded-2xl bg-primary px-10 text-base font-semibold text-white shadow-glow transition duration-200 hover:brightness-110 active:scale-[0.98] sm:text-lg"
+            className="touch-manipulation inline-flex min-h-[56px] w-full max-w-md items-center justify-center rounded-2xl bg-primary px-10 text-base font-semibold text-white shadow-glow transition duration-200 hover:brightness-110 active:scale-[0.98] sm:min-h-[52px] sm:text-lg"
           >
-            Try Virlo Free
+            Try Free
           </Link>
-          <p className="text-sm text-muted">
-            Free plan includes{" "}
-            <span className="text-foreground/90">3 generations per day</span>.
-            No credit card to start.
+          <p className="text-center text-sm text-muted">
+            <span className="font-medium text-foreground/90">
+              No credit card required
+            </span>
+            {" · "}
+            Live demo below — generate without logging in.
           </p>
           <Link
-            href="#demo"
-            className="text-sm font-medium text-primary/90 underline-offset-4 transition hover:text-primary hover:underline"
+            href="#live-demo"
+            className="touch-manipulation text-base font-semibold text-primary/90 underline-offset-4 transition hover:text-primary hover:underline sm:text-[17px]"
           >
-            See how it works
+            Try the live demo
           </Link>
         </motion.div>
       </div>
