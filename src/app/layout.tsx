@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
+import { SupabaseMissingBanner } from "@/components/supabase-missing-banner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
 import "./globals.css";
@@ -42,6 +43,7 @@ export default function RootLayout({
       className={`${inter.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <SupabaseMissingBanner />
         <ThemeScript />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
